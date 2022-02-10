@@ -1,0 +1,52 @@
+
+pipeline{
+agent any 
+/*
+agent{
+label 'main'
+}
+*/
+stages{
+  stage('CheckoutCode'){
+	steps{
+	git branch: 'main', credentialsId: 'ff095d86-e2b6-4ca3-8a8b-46531af4170e', url: 'https://github.com/Hemasankar-Guntur/wallmart.git'
+	}
+    }
+	
+  stage('Build'){
+	steps{
+	sh "mvn clean package"
+	}
+    }
+	
+  stage('ExecteSonarQubeReport'){
+	steps{
+	sh "mvn clean sonar:sonar"
+	}
+    }
+	
+   stage('UploadArtifactsintoNexus'){
+	steps{
+	sh "mvn deploy"
+	}
+    }
+	
+  stage('DeployAppintoTomcatServer'){
+	steps{
+	sshagent(['e1a1e07f-1507-4f3d-9304-880b8f51ce82']) {
+  sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.213.52.249:/opt/apache-tomcat-9.0.53/webapps/"
+	}
+	}
+	}  
+	
+  stage('SendEmailNotification'){
+	steps{
+	emailext body: '''Build Over ...
+
+  Regards
+  Hemasankar Software Solutions
+  Guntur, Andhra Pradesh - 522001''', subject: 'Build Over', to: 'gechemasankar@gmail.com, srinivas.achutha@gmail.com,srinivas20519@gmail.com'
+	}
+	}    
+	}
+}
